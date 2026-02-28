@@ -1,0 +1,39 @@
+{
+	"name": "obsidian-openclaw",
+	"version": "1.0.0",
+	"description": "Obsidian plugin for OpenClaw integration - chat with your AI assistant directly in your vault",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"lint": "eslint src --ext .ts",
+		"lint:fix": "eslint src --ext .ts --fix",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:ui": "vitest --ui",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [
+		"obsidian",
+		"openclaw",
+		"ai",
+		"chat"
+	],
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.19.13",
+		"@typescript-eslint/eslint-plugin": "^8.56.1",
+		"@typescript-eslint/parser": "^8.56.1",
+		"@vitest/ui": "^4.0.18",
+		"esbuild": "0.25.5",
+		"eslint": "^10.0.2",
+		"tslib": "2.4.0",
+		"typescript": "^5.8.3",
+		"vitest": "^4.0.18"
+	},
+	"dependencies": {
+		"@noble/ed25519": "^3.0.0",
+		"obsidian": "latest"
+	}
+}
