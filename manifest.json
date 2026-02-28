@@ -1,7 +1,7 @@
 {
 	"id": "openclaw",
 	"name": "OpenClaw",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.11.7",
 	"description": "Work with your OpenClaw AI assistant.",
 	"author": "shawnohail",

@@ -167,6 +167,21 @@ npm run test
 ./install.sh ~/path/to/vault
 ```
 
+## Releasing
+
+To create a new release:
+
+1. Bump the version (e.g. in `package.json` and `manifest.json`) if needed.
+2. Build and commit your changes.
+3. Create and push an annotated tag:
+
+```bash
+git tag -a 1.0.1 -m "1.0.1"
+git push origin 1.0.1
+```
+
+Pushing the tag will trigger the release workflow.
+
 ## License
 
 MIT — see [LICENSE](LICENSE)
