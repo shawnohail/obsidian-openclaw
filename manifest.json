@@ -3,7 +3,7 @@
 	"name": "OpenClaw",
 	"version": "1.0.0",
 	"minAppVersion": "1.11.7",
-	"description": "Chat with your OpenClaw AI assistant directly in your Obsidian vault.",
+	"description": "Work with your OpenClaw AI assistant.",
 	"author": "shawnohail",
 	"authorUrl": "https://github.com/shawnohail",
 	"isDesktopOnly": true
