@@ -1,4 +1,4 @@
-import type { DeviceIdentityData, DeviceAuthToken, DevicePairingStatus } from "./device-identity";
+import type { DeviceIdentityData, DeviceAuthToken, DevicePairingStatus } from "./device-identity"
 
 /** Chat message displayed in the sidebar */
 export interface ChatMessage {
@@ -62,7 +62,7 @@ export const DEFAULT_SETTINGS: OpenClawSettings = {
 	deviceAuthToken: null,
 	devicePairingStatus: "unpaired",
 	currentSessionKey: undefined,
-};
+}
 
 /** OpenAI-compatible chat completion response */
 export interface ChatCompletionResponse {

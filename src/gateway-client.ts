@@ -1,15 +1,15 @@
-import { requestUrl } from "obsidian";
+import { requestUrl } from "obsidian"
 import type {
 	OpenClawSettings,
 	ChatCompletionResponse,
 	StreamingMode,
-} from "./types";
-import type { DeviceAuthToken } from "./device-identity";
+} from "./types"
+import type { DeviceAuthToken } from "./device-identity"
 import {
 	WsGatewayClient,
 	type WsConnectionState,
 	type ChatEventPayload,
-} from "./ws-gateway-client";
+} from "./ws-gateway-client"
 
 /**
  * OpenClaw Gateway client.
@@ -22,7 +22,7 @@ import {
  *   3. **Off** — single request/response via Obsidian's requestUrl().
  */
 export class GatewayClient {
-	private wsClient: WsGatewayClient | null = null;
+	private wsClient: WsGatewayClient | null = null
 	private chatEventListeners = new Map<
 		string,
 		{
@@ -30,31 +30,31 @@ export class GatewayClient {
 			onDone: () => void;
 			onError: (err: Error) => void;
 		}
-	>();
+	>()
 	private connectionStateListeners: Array<
 		(state: WsConnectionState) => void
-	> = [];
-	private pairingRequiredListeners: Array<() => void> = [];
+	> = []
+	private pairingRequiredListeners: Array<() => void> = []
 
 	/** Callback to persist settings changes (device token, pairing status) */
-	onSettingsChanged: (() => Promise<void>) | null = null;
+	onSettingsChanged: (() => Promise<void>) | null = null
 
 	constructor(private getSettings: () => OpenClawSettings) {}
 
 	private get baseUrl(): string {
-		return this.getSettings().gatewayUrl.replace(/\/+$/, "");
+		return this.getSettings().gatewayUrl.replace(/\/+$/, "")
 	}
 
 	private get token(): string {
-		return this.getSettings().gatewayToken;
+		return this.getSettings().gatewayToken
 	}
 
 	private get agentId(): string {
-		return this.getSettings().agentId || "main";
+		return this.getSettings().agentId || "main"
 	}
 
 	private get streamingMode(): StreamingMode {
-		return this.getSettings().streamingMode ?? "websocket";
+		return this.getSettings().streamingMode ?? "websocket"
 	}
 
 	// ── WebSocket lifecycle ──────────────────────────────────────
@@ -65,8 +65,8 @@ export class GatewayClient {
 	 */
 	connectWebSocket(): void {
 		if (this.wsClient) {
-			this.wsClient.restart();
-			return;
+			this.wsClient.restart()
+			return
 		}
 
 		this.wsClient = new WsGatewayClient({
@@ -77,68 +77,68 @@ export class GatewayClient {
 			getDeviceAuthToken: () => this.getSettings().deviceAuthToken,
 			onStateChange: (state) => {
 				for (const listener of this.connectionStateListeners) {
-					listener(state);
+					listener(state)
 				}
 			},
 			onChatEvent: (event) => this.handleChatEvent(event),
 			onDeviceTokenReceived: (token) => {
-				this.handleDeviceTokenReceived(token);
+				this.handleDeviceTokenReceived(token)
 			},
 			onPairingRequired: () => {
-				const settings = this.getSettings();
-				settings.devicePairingStatus = "pending";
-				this.onSettingsChanged?.();
+				const settings = this.getSettings()
+				settings.devicePairingStatus = "pending"
+				void this.onSettingsChanged?.()
 				for (const listener of this.pairingRequiredListeners) {
-					listener();
+					listener()
 				}
 			},
 			onConnectError: (err) => {
-				console.error("[OpenClaw] Connect error:", err);
+				console.error("[OpenClaw] Connect error:", err)
 			},
-		});
+		})
 
-		this.wsClient.start();
+		void this.wsClient.start()
 	}
 
 	/** Disconnect the WebSocket client. */
 	disconnectWebSocket(): void {
 		if (this.wsClient) {
-			this.wsClient.stop();
-			this.wsClient = null;
+			this.wsClient.stop()
+			this.wsClient = null
 		}
 	}
 
 	/** Current WebSocket connection state */
 	get wsConnectionState(): WsConnectionState {
-		return this.wsClient?.connectionState ?? "disconnected";
+		return this.wsClient?.connectionState ?? "disconnected"
 	}
 
 	/** Register a listener for WebSocket connection state changes */
 	onConnectionStateChange(
 		listener: (state: WsConnectionState) => void,
 	): () => void {
-		this.connectionStateListeners.push(listener);
+		this.connectionStateListeners.push(listener)
 		return () => {
 			this.connectionStateListeners =
-				this.connectionStateListeners.filter((l) => l !== listener);
-		};
+				this.connectionStateListeners.filter((l) => l !== listener)
+		}
 	}
 
 	/** Register a listener for pairing required events */
 	onPairingRequired(listener: () => void): () => void {
-		this.pairingRequiredListeners.push(listener);
+		this.pairingRequiredListeners.push(listener)
 		return () => {
 			this.pairingRequiredListeners =
-				this.pairingRequiredListeners.filter((l) => l !== listener);
-		};
+				this.pairingRequiredListeners.filter((l) => l !== listener)
+		}
 	}
 
 	/** Handle device token received from gateway after successful pairing */
 	private handleDeviceTokenReceived(token: DeviceAuthToken): void {
-		const settings = this.getSettings();
-		settings.deviceAuthToken = token;
-		settings.devicePairingStatus = "paired";
-		this.onSettingsChanged?.();
+		const settings = this.getSettings()
+		settings.deviceAuthToken = token
+		settings.devicePairingStatus = "paired"
+		void this.onSettingsChanged?.()
 	}
 
 	// ── Health check ─────────────────────────────────────────────
@@ -150,7 +150,7 @@ export class GatewayClient {
 			this.streamingMode === "websocket" &&
 			this.wsClient?.isConnected
 		) {
-			return true;
+			return true
 		}
 
 		try {
@@ -160,10 +160,10 @@ export class GatewayClient {
 				headers: {
 					Authorization: `Bearer ${this.token}`,
 				},
-			});
-			return res.status === 200;
+			})
+			return res.status === 200
 		} catch {
-			return false;
+			return false
 		}
 	}
 
@@ -173,20 +173,20 @@ export class GatewayClient {
 		sessionKey: string,
 		limit = 50,
 	): Promise<Record<string, unknown> | undefined> {
-		if (!this.wsClient?.isConnected) return undefined;
-		return this.wsClient.chatHistory(sessionKey, limit);
+		if (!this.wsClient?.isConnected) return undefined
+		return this.wsClient.chatHistory(sessionKey, limit)
 	}
 
 	/** Remove a paired device from the gateway */
 	async removeDevice(deviceId: string): Promise<boolean> {
 		// Use WebSocket RPC if connected
 		if (this.wsClient?.isConnected) {
-			return await this.wsClient.removeDevice(deviceId);
+			return await this.wsClient.removeDevice(deviceId)
 		}
 		
 		// Fallback: not supported without WebSocket
-		console.error("[OpenClaw] Device removal requires WebSocket connection");
-		return false;
+		console.error("[OpenClaw] Device removal requires WebSocket connection")
+		return false
 	}
 
 	// ── Non-streaming (HTTP) ─────────────────────────────────────
@@ -203,9 +203,9 @@ export class GatewayClient {
 			model: `openclaw:${this.agentId}`,
 			messages,
 			stream: false,
-		};
+		}
 		if (sessionUser) {
-			body.user = sessionUser;
+			body.user = sessionUser
 		}
 
 		const res = await requestUrl({
@@ -216,17 +216,16 @@ export class GatewayClient {
 				Authorization: `Bearer ${this.token}`,
 			},
 			body: JSON.stringify(body),
-		});
+		})
 
-		const data = res.json as ChatCompletionResponse;
-		return data.choices?.[0]?.message?.content ?? "";
+		const data = res.json as ChatCompletionResponse
+		return data.choices?.[0]?.message?.content ?? ""
 	}
 
-	// ── Streaming (dispatches to WS or SSE) ──────────────────────
+	// ── Streaming (WebSocket) ─────────────────────────────────────
 
 	/**
-	 * Send a chat message with streaming.
-	 * Automatically routes to WebSocket or HTTP SSE based on settings.
+	 * Send a chat message with streaming via WebSocket.
 	 */
 	async sendMessageStreaming(
 		messages: Array<{ role: string; content: string }>,
@@ -236,140 +235,106 @@ export class GatewayClient {
 		signal?: AbortSignal,
 		sessionUser?: string,
 	): Promise<void> {
-		const mode = this.streamingMode;
-
-		if (mode === "websocket") {
-			return this.sendMessageStreamingWs(
-				messages,
-				onChunk,
-				onDone,
-				onError,
-				signal,
-				sessionUser,
-			);
-		}
-
-		// Fall back to HTTP SSE
-		return this.sendMessageStreamingSse(
-			messages,
-			onChunk,
-			onDone,
-			onError,
-			signal,
-			sessionUser,
-		);
-	}
-
-	// ── WebSocket streaming ──────────────────────────────────────
-
-	private async sendMessageStreamingWs(
-		messages: Array<{ role: string; content: string }>,
-		onChunk: (text: string) => void,
-		onDone: () => void,
-		onError: (err: Error) => void,
-		signal?: AbortSignal,
-		sessionUser?: string,
-	): Promise<void> {
 		if (!this.wsClient?.isConnected) {
 			// Auto-connect if not connected
-			this.connectWebSocket();
+			this.connectWebSocket()
 
 			// Wait briefly for connection
-			const connected = await this.waitForConnection(5_000);
+			const connected = await this.waitForConnection(5_000)
 			if (!connected) {
 				onError(
 					new Error(
 						"WebSocket not connected. Check gateway URL and token.",
 					),
-				);
-				return;
+				)
+				return
 			}
 		}
 
 		// Build the user message from conversation
-		const lastUserMessage = this.extractLastUserMessage(messages);
+		const lastUserMessage = this.extractLastUserMessage(messages)
 		if (!lastUserMessage) {
-			onError(new Error("No user message found in conversation"));
-			return;
+			onError(new Error("No user message found in conversation"))
+			return
 		}
 
 		// Build session key
-		const sessionKey = this.resolveSessionKey(sessionUser);
+		const sessionKey = this.resolveSessionKey(sessionUser)
 
 		try {
 			const runId = await this.wsClient!.chatSend(
 				sessionKey,
 				lastUserMessage,
-			);
+			)
 
 			// Register event handler for this run
 			this.chatEventListeners.set(runId, {
 				onChunk,
 				onDone: () => {
-					this.chatEventListeners.delete(runId);
-					onDone();
+					this.chatEventListeners.delete(runId)
+					onDone()
 				},
 				onError: (err) => {
-					this.chatEventListeners.delete(runId);
-					onError(err);
+					this.chatEventListeners.delete(runId)
+					onError(err)
 				},
-			});
+			})
 
 			// Handle abort signal
 			if (signal) {
 				const abortHandler = () => {
-					this.chatEventListeners.delete(runId);
+					this.chatEventListeners.delete(runId)
 					this.wsClient
 						?.chatAbort(sessionKey, runId)
-						.catch(() => {});
-					onDone();
-				};
+						.catch(() => {})
+					onDone()
+				}
 
 				if (signal.aborted) {
-					abortHandler();
-					return;
+					abortHandler()
+					return
 				}
 				signal.addEventListener("abort", abortHandler, {
 					once: true,
-				});
+				})
 			}
 		} catch (err: unknown) {
-			onError(err instanceof Error ? err : new Error(String(err)));
+			onError(err instanceof Error ? err : new Error(String(err)))
 		}
 	}
 
 	/** Handle incoming chat events from WebSocket */
 	private handleChatEvent(event: ChatEventPayload): void {
-		const listener = this.chatEventListeners.get(event.runId);
-		if (!listener) return;
+		const listener = this.chatEventListeners.get(event.runId)
+		if (!listener) return
 
 		switch (event.state) {
 			case "delta": {
-				const text = this.extractTextFromChatMessage(event.message);
+				const text = this.extractTextFromChatMessage(event.message)
 				if (text !== null) {
-					listener.onChunk(text);
+					listener.onChunk(text)
 				}
-				break;
+				break
 			}
 			case "final": {
-				const text = this.extractTextFromChatMessage(event.message);
+				const text = this.extractTextFromChatMessage(event.message)
 				if (text !== null) {
-					listener.onChunk(text);
+					listener.onChunk(text)
 				}
-				listener.onDone();
-				break;
+				listener.onDone()
+				break
 			}
 			case "error": {
 				listener.onError(
 					new Error(
 						event.errorMessage ?? "Unknown gateway error",
 					),
-				);
-				break;
+				)
+				break
 			}
 			case "aborted": {
-				listener.onDone();
-				break;
+				listener.onDone()
+				break
 			}
 		}
 	}
@@ -381,11 +346,11 @@ export class GatewayClient {
 	private extractTextFromChatMessage(
 		message?: ChatEventPayload["message"],
 	): string | null {
-		if (!message?.content) return null;
+		if (!message?.content) return null
 		const parts = message.content
 			.filter((c) => c.type === "text" && c.text)
-			.map((c) => c.text!);
-		return parts.length > 0 ? parts.join("") : null;
+			.map((c) => c.text!)
+		return parts.length > 0 ? parts.join("") : null
 	}
 
 	/**
@@ -396,10 +361,10 @@ export class GatewayClient {
 	): string | null {
 		for (let i = messages.length - 1; i >= 0; i--) {
 			if (messages[i]!.role === "user") {
-				return messages[i]!.content;
+				return messages[i]!.content
 			}
 		}
-		return null;
+		return null
 	}
 
 	/**
@@ -408,137 +373,37 @@ export class GatewayClient {
 	 * a new unique key, persists it, and returns it.
 	 */
 	private resolveSessionKey(_sessionUser?: string): string {
-		const settings = this.getSettings();
+		const settings = this.getSettings()
 		if (settings.currentSessionKey) {
-			return settings.currentSessionKey;
+			return settings.currentSessionKey
 		}
-		const key = `${this.agentId}:${Date.now()}:${crypto.randomUUID()}`;
-		settings.currentSessionKey = key;
-		this.onSettingsChanged?.();
-		return key;
+		const key = `${this.agentId}:${Date.now()}:${crypto.randomUUID()}`
+		settings.currentSessionKey = key
+		void this.onSettingsChanged?.()
+		return key
 	}
 
 	/** Wait for WebSocket connection up to timeoutMs */
 	private waitForConnection(timeoutMs: number): Promise<boolean> {
-		if (this.wsClient?.isConnected) return Promise.resolve(true);
+		if (this.wsClient?.isConnected) return Promise.resolve(true)
 
 		return new Promise((resolve) => {
 			const timeout = setTimeout(() => {
-				unsub();
-				resolve(false);
-			}, timeoutMs);
+				unsub()
+				resolve(false)
+			}, timeoutMs)
 
 			const unsub = this.onConnectionStateChange((state) => {
 				if (state === "connected") {
-					clearTimeout(timeout);
-					unsub();
-					resolve(true);
+					clearTimeout(timeout)
+					unsub()
+					resolve(true)
 				} else if (state === "disconnected") {
-					clearTimeout(timeout);
-					unsub();
-					resolve(false);
+					clearTimeout(timeout)
+					unsub()
+					resolve(false)
 				}
-			});
-		});
-	}
-
-	// ── HTTP SSE streaming (original implementation) ─────────────
-
-	/**
-	 * Send a chat message with SSE streaming.
-	 * Uses the Fetch API directly (Obsidian runs in Electron/Chromium
-	 * so fetch + ReadableStream are available).
-	 */
-	private async sendMessageStreamingSse(
-		messages: Array<{ role: string; content: string }>,
-		onChunk: (text: string) => void,
-		onDone: () => void,
-		onError: (err: Error) => void,
-		signal?: AbortSignal,
-		sessionUser?: string,
-	): Promise<void> {
-		const body: Record<string, unknown> = {
-			model: `openclaw:${this.agentId}`,
-			messages,
-			stream: true,
-		};
-		if (sessionUser) {
-			body.user = sessionUser;
-		}
-
-		try {
-			const response = await fetch(
-				`${this.baseUrl}/v1/chat/completions`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${this.token}`,
-					},
-					body: JSON.stringify(body),
-					signal,
-				},
-			);
-
-			if (!response.ok) {
-				const text = await response.text();
-				throw new Error(
-					`Gateway returned ${response.status}: ${text}`,
-				);
-			}
-
-			const reader = response.body?.getReader();
-			if (!reader) {
-				throw new Error("No response body reader available");
-			}
-
-			const decoder = new TextDecoder();
-			let buffer = "";
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-
-				// Process complete SSE lines
-				const lines = buffer.split("\n");
-				// Keep the last potentially incomplete line in the buffer
-				buffer = lines.pop() ?? "";
-
-				for (const line of lines) {
-					const trimmed = line.trim();
-					if (!trimmed || trimmed.startsWith(":")) continue;
-
-					if (trimmed.startsWith("data: ")) {
-						const data = trimmed.slice(6);
-						if (data === "[DONE]") {
-							onDone();
-							return;
-						}
-						try {
-							const chunk = JSON.parse(data);
-							const content =
-								chunk.choices?.[0]?.delta?.content;
-							if (content) {
-								onChunk(content);
-							}
-						} catch {
-							// Skip malformed JSON lines
-						}
-					}
-				}
-			}
-
-			onDone();
-		} catch (err: unknown) {
-			if (err instanceof Error && err.name === "AbortError") {
-				onDone();
-			} else {
-				onError(
-					err instanceof Error ? err : new Error(String(err)),
-				);
-			}
-		}
+			})
+		})
 	}
 }

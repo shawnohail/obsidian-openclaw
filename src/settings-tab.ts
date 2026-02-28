@@ -1,29 +1,27 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
-import type OpenClawPlugin from "./main";
-import type { StreamingMode } from "./types";
-import { generateDeviceIdentity } from "./device-identity";
+/* eslint-disable obsidianmd/ui/sentence-case -- settings use technical labels and headings */
+import { App, Notice, PluginSettingTab, Setting } from "obsidian"
+import type OpenClawPlugin from "./main"
+import { generateDeviceIdentity } from "./device-identity"
 
 export class OpenClawSettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
 		private plugin: OpenClawPlugin,
 	) {
-		super(app, plugin);
+		super(app, plugin)
 	}
 
 	display(): void {
-		const { containerEl } = this;
-		containerEl.empty();
-
-		containerEl.createEl("h2", { text: "OpenClaw Settings" });
+		const { containerEl } = this
+		containerEl.empty()
 
 		containerEl.createEl("p", {
 			text: "Connect Obsidian to your local OpenClaw gateway using WebSocket streaming for real-time responses.",
 			cls: "setting-item-description",
-		});
+		})
 
 		// --- Connection ---
-		containerEl.createEl("h3", { text: "Connection" });
+		new Setting(containerEl).setName("Connection").setHeading()
 
 		new Setting(containerEl)
 			.setName("Gateway URL")
@@ -34,24 +32,34 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				text
 					.setPlaceholder("http://localhost:18789")
 					.setValue(this.plugin.settings.gatewayUrl)
-					.onChange(async (value) => {
-						this.plugin.settings.gatewayUrl = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.plugin.settings.gatewayUrl = value
+						void this.plugin.saveSettings()
 					}),
 			)
 			.addButton((button) =>
 				button
 					.setButtonText("Test")
 					.setCta()
-					.onClick(async () => {
-						button.setButtonText("Testing…");
-						button.setDisabled(true);
-						const ok = await this.plugin.client.healthCheck();
-						button.setButtonText(ok ? "✓ Connected" : "✗ Failed");
-						button.setDisabled(false);
-						setTimeout(() => button.setButtonText("Test"), 2000);
+					.onClick((): void => {
+						/* eslint-disable @typescript-eslint/no-misused-promises -- fire-and-forget health check */
+						button.setButtonText("Testing…")
+						button.setDisabled(true)
+						const p = this.plugin.client
+							.healthCheck()
+							.then((ok) => {
+								button.setButtonText(ok ? "✓ Connected" : "✗ Failed")
+								button.setDisabled(false)
+								setTimeout(() => button.setButtonText("Test"), 2000)
+							})
+							.catch(() => {
+								button.setButtonText("Test")
+								button.setDisabled(false)
+							})
+						void p
+						/* eslint-enable @typescript-eslint/no-misused-promises */
 					}),
-			);
+			)
 
 		new Setting(containerEl)
 			.setName("Gateway token")
@@ -59,16 +67,16 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				"Authentication token (OPENCLAW_GATEWAY_TOKEN).",
 			)
 			.addText((text) => {
-				text.inputEl.type = "password";
-				text.inputEl.style.width = "100%";
+				text.inputEl.type = "password"
+				text.inputEl.addClass("openclaw-setting-input-full")
 				return text
 					.setPlaceholder("Enter your gateway token")
 					.setValue(this.plugin.settings.gatewayToken)
-					.onChange(async (value) => {
-						this.plugin.settings.gatewayToken = value;
-						await this.plugin.saveSettings();
-					});
-			});
+					.onChange((value) => {
+						this.plugin.settings.gatewayToken = value
+						void this.plugin.saveSettings()
+					})
+			})
 
 		new Setting(containerEl)
 			.setName("Agent ID")
@@ -79,17 +87,17 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				text
 					.setPlaceholder("main")
 					.setValue(this.plugin.settings.agentId)
-					.onChange(async (value) => {
-						this.plugin.settings.agentId = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.plugin.settings.agentId = value
+						void this.plugin.saveSettings()
 					}),
-			);
+			)
 
 		// --- Device Pairing ---
-		containerEl.createEl("h3", { text: "Device Pairing" });
+		new Setting(containerEl).setName("Device Pairing").setHeading()
 
-		const identity = this.plugin.settings.deviceIdentity;
-		const pairingStatus = this.plugin.settings.devicePairingStatus;
+		const identity = this.plugin.settings.deviceIdentity
+		const pairingStatus = this.plugin.settings.devicePairingStatus
 
 		// Device ID display
 		if (identity) {
@@ -97,24 +105,25 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				.setName("Device ID")
 				.setDesc("Unique identifier for this Obsidian installation.")
 				.addText((text) => {
-					text.inputEl.style.width = "100%";
-					text.inputEl.style.fontFamily = "monospace";
-					text.inputEl.style.fontSize = "11px";
+					text.inputEl.addClass("openclaw-setting-device-id")
 					return text
 						.setValue(identity.deviceId)
-						.setDisabled(true);
+						.setDisabled(true)
 				})
 			.addButton((button) =>
-				button.setButtonText("Regenerate").onClick(async () => {
-					this.plugin.settings.deviceIdentity = await generateDeviceIdentity();
-					this.plugin.settings.deviceAuthToken = null;
-					this.plugin.settings.devicePairingStatus = "unpaired";
-					await this.plugin.saveSettings();
-					this.plugin.client.disconnectWebSocket();
-					new Notice("New device identity generated. Re-pair to connect.");
-					this.display();
+				button.setButtonText("Regenerate").onClick(() => {
+					void generateDeviceIdentity().then((identity) => {
+						this.plugin.settings.deviceIdentity = identity
+						this.plugin.settings.deviceAuthToken = null
+						this.plugin.settings.devicePairingStatus = "unpaired"
+						return this.plugin.saveSettings()
+					}).then(() => {
+						this.plugin.client.disconnectWebSocket()
+						new Notice("New device identity generated. Re-pair to connect.")
+						this.display()
+					})
 				}),
-			);
+			)
 		}
 
 		// Pairing status
@@ -122,11 +131,11 @@ export class OpenClawSettingTab extends PluginSettingTab {
 			unpaired: "⚪ Not paired",
 			pending: "🟡 Pending approval",
 			paired: "🟢 Paired",
-		};
+		}
 
 		const statusSetting = new Setting(containerEl)
 			.setName("Pairing status")
-			.setDesc(statusLabels[pairingStatus] ?? "Unknown");
+			.setDesc(statusLabels[pairingStatus] ?? "Unknown")
 
 		if (pairingStatus === "unpaired" || pairingStatus === "pending") {
 			statusSetting.addButton((button) =>
@@ -137,45 +146,37 @@ export class OpenClawSettingTab extends PluginSettingTab {
 							: "Pair Device",
 					)
 					.setCta()
-					.onClick(async () => {
-						button.setButtonText("Connecting…");
-						button.setDisabled(true);
-
-						// Ensure identity exists
-						if (!this.plugin.settings.deviceIdentity) {
-							this.plugin.settings.deviceIdentity =
-								await generateDeviceIdentity();
-							await this.plugin.saveSettings();
-						}
-
-						// Trigger WebSocket reconnect — the connect flow
-						// will send the device identity and the gateway
-						// will add it to pending if not already paired.
-						this.plugin.client.connectWebSocket();
-
-						// Wait a few seconds for result
-						await new Promise((resolve) =>
-							setTimeout(resolve, 3_000),
-						);
-
-						const newStatus =
-							this.plugin.settings.devicePairingStatus;
-						if (newStatus === "paired") {
-							new Notice("✅ Device paired successfully!");
-						} else if (newStatus === "pending") {
-							new Notice(
-								"⏳ Pairing request sent. Approve on the gateway:\n  openclaw devices approve",
-							);
-						} else {
-							new Notice(
-								"Connection attempt completed. Check status.",
-							);
-						}
-
-						button.setDisabled(false);
-						this.display(); // Refresh UI
+					.onClick(() => {
+						button.setButtonText("Connecting…")
+						button.setDisabled(true)
+						void (async () => {
+							if (!this.plugin.settings.deviceIdentity) {
+								this.plugin.settings.deviceIdentity =
+									await generateDeviceIdentity()
+								await this.plugin.saveSettings()
+							}
+							this.plugin.client.connectWebSocket()
+							await new Promise((resolve) =>
+								setTimeout(resolve, 3_000),
+							)
+							const newStatus =
+								this.plugin.settings.devicePairingStatus
+							if (newStatus === "paired") {
+								new Notice("✅ Device paired successfully!")
+							} else if (newStatus === "pending") {
+								new Notice(
+									"⏳ Pairing request sent. Approve on the gateway:\n  openclaw devices approve",
+								)
+							} else {
+								new Notice(
+									"Connection attempt completed. Check status.",
+								)
+							}
+							button.setDisabled(false)
+							this.display()
+						})()
 					}),
-			);
+			)
 		}
 
 		if (pairingStatus === "paired") {
@@ -183,37 +184,31 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				button
 					.setButtonText("Unpair Device")
 					.setWarning()
-					.onClick(async () => {
-						this.plugin.settings.deviceAuthToken = null;
-						this.plugin.settings.devicePairingStatus = "unpaired";
-						await this.plugin.saveSettings();
-
-						// Disconnect and reconnect without device token
-						this.plugin.client.disconnectWebSocket();
-						new Notice("Device unpaired. You may need to re-pair.");
-						this.display();
+					.onClick(() => {
+						this.plugin.settings.deviceAuthToken = null
+						this.plugin.settings.devicePairingStatus = "unpaired"
+						void this.plugin.saveSettings().then(() => {
+							this.plugin.client.disconnectWebSocket()
+							new Notice("Device unpaired. You may need to re-pair.")
+							this.display()
+						})
 					}),
-			);
+			)
 		}
 
 		if (pairingStatus === "pending") {
 			const pendingNote = containerEl.createDiv({
-				cls: "setting-item-description",
-			});
-			pendingNote.style.marginTop = "-4px";
-			pendingNote.style.paddingLeft = "18px";
-			pendingNote.innerHTML = `
-				<p style="font-size: 12px; color: var(--text-muted); margin: 4px 0;">
-					This device is waiting for approval on the gateway host.<br>
-					Run <code>openclaw devices approve</code> on the machine running the gateway,<br>
-					or approve in the OpenClaw Control UI under Nodes → Devices.
-				</p>
-			`;
+				cls: "setting-item-description openclaw-setting-description-nested",
+			})
+			const p = pendingNote.createEl("p")
+			p.createSpan({ text: "This device is waiting for approval on the gateway host. Run " })
+			p.createEl("code", { text: "openclaw devices approve" })
+			p.createSpan({ text: " on the machine running the gateway, or approve in the OpenClaw Control UI under Nodes → Devices." })
 		}
 
 
 		// --- Context ---
-		containerEl.createEl("h3", { text: "Context Sharing" });
+		new Setting(containerEl).setName("Context Sharing").setHeading()
 
 		new Setting(containerEl)
 			.setName("Share active file path")
@@ -223,11 +218,11 @@ export class OpenClawSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.shareActiveFile)
-					.onChange(async (value) => {
-						this.plugin.settings.shareActiveFile = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.plugin.settings.shareActiveFile = value
+						void this.plugin.saveSettings()
 					}),
-			);
+			)
 
 		new Setting(containerEl)
 			.setName("Share selected text")
@@ -237,10 +232,10 @@ export class OpenClawSettingTab extends PluginSettingTab {
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.shareSelection)
-					.onChange(async (value) => {
-						this.plugin.settings.shareSelection = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.plugin.settings.shareSelection = value
+						void this.plugin.saveSettings()
 					}),
-			);
+			)
 	}
 }

@@ -6,37 +6,37 @@
  * The gateway uses this to track paired devices and issue device tokens.
  */
 
-import * as ed from "@noble/ed25519";
+import * as ed from "@noble/ed25519"
 
 // ── Helpers ──────────────────────────────────────────────────────
 
 /** Base64url encode bytes (no padding) */
 function base64UrlEncode(bytes: Uint8Array): string {
-	let binary = "";
-	for (const b of bytes) binary += String.fromCharCode(b);
-	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	let binary = ""
+	for (const b of bytes) binary += String.fromCharCode(b)
+	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
 }
 
 /** Base64url decode to bytes */
 function base64UrlDecode(str: string): Uint8Array {
-	const padded = str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (str.length % 4)) % 4);
-	const binary = atob(padded);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-	return bytes;
+	const padded = str.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (str.length % 4)) % 4)
+	const binary = atob(padded)
+	const bytes = new Uint8Array(binary.length)
+	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+	return bytes
 }
 
 /** Hex encode bytes */
 function hexEncode(bytes: Uint8Array): string {
 	return Array.from(bytes)
 		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
+		.join("")
 }
 
 /** SHA-256 hash via Web Crypto */
 async function sha256Hex(data: Uint8Array): Promise<string> {
-	const hash = await crypto.subtle.digest("SHA-256", data.buffer as ArrayBuffer);
-	return hexEncode(new Uint8Array(hash));
+	const hash = await crypto.subtle.digest("SHA-256", data.buffer as ArrayBuffer)
+	return hexEncode(new Uint8Array(hash))
 }
 
 // ── Device Identity Types ────────────────────────────────────────
@@ -71,9 +71,9 @@ export type DevicePairingStatus = "unpaired" | "pending" | "paired";
  */
 export async function generateDeviceIdentity(): Promise<DeviceIdentityData> {
 	// noble/ed25519 v2: randomSecretKey() returns 32-byte seed
-	const privateKeyBytes = ed.utils.randomSecretKey();
-	const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes);
-	const deviceId = await sha256Hex(publicKeyBytes);
+	const privateKeyBytes = ed.utils.randomSecretKey()
+	const publicKeyBytes = await ed.getPublicKeyAsync(privateKeyBytes)
+	const deviceId = await sha256Hex(publicKeyBytes)
 
 	return {
 		version: 1,
@@ -81,7 +81,7 @@ export async function generateDeviceIdentity(): Promise<DeviceIdentityData> {
 		publicKey: base64UrlEncode(publicKeyBytes),
 		privateKey: base64UrlEncode(privateKeyBytes),
 		createdAtMs: Date.now(),
-	};
+	}
 }
 
 /**
@@ -91,17 +91,17 @@ export async function generateDeviceIdentity(): Promise<DeviceIdentityData> {
 export async function validateDeviceIdentity(
 	data: DeviceIdentityData,
 ): Promise<DeviceIdentityData> {
-	const pubBytes = base64UrlDecode(data.publicKey);
-	const derivedId = await sha256Hex(pubBytes);
+	const pubBytes = base64UrlDecode(data.publicKey)
+	const derivedId = await sha256Hex(pubBytes)
 
 	if (derivedId !== data.deviceId) {
 		console.warn(
 			"[OpenClaw] Device ID mismatch — re-derived from public key",
-		);
-		return { ...data, deviceId: derivedId };
+		)
+		return { ...data, deviceId: derivedId }
 	}
 
-	return data;
+	return data
 }
 
 // ── Signing ──────────────────────────────────────────────────────
@@ -121,8 +121,8 @@ export function buildDeviceAuthPayload(params: {
 	token: string | null;
 	nonce: string;
 }): string {
-	const scopes = params.scopes.join(",");
-	const token = params.token ?? "";
+	const scopes = params.scopes.join(",")
+	const token = params.token ?? ""
 	return [
 		"v2",
 		params.deviceId,
@@ -133,7 +133,7 @@ export function buildDeviceAuthPayload(params: {
 		String(params.signedAtMs),
 		token,
 		params.nonce,
-	].join("|");
+	].join("|")
 }
 
 /**
@@ -144,8 +144,8 @@ export async function signPayload(
 	privateKeyBase64Url: string,
 	payload: string,
 ): Promise<string> {
-	const privateKeyBytes = base64UrlDecode(privateKeyBase64Url);
-	const messageBytes = new TextEncoder().encode(payload);
-	const signature = await ed.signAsync(messageBytes, privateKeyBytes);
-	return base64UrlEncode(signature);
+	const privateKeyBytes = base64UrlDecode(privateKeyBase64Url)
+	const messageBytes = new TextEncoder().encode(payload)
+	const signature = await ed.signAsync(messageBytes, privateKeyBytes)
+	return base64UrlEncode(signature)
 }

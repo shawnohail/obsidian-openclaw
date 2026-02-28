@@ -1,34 +1,39 @@
-import tseslint from '@typescript-eslint/eslint-plugin';
-import parser from '@typescript-eslint/parser';
+// eslint.config.mjs
+import tsparser from "@typescript-eslint/parser";
+import { defineConfig } from "eslint/config";
+import obsidianmd from "eslint-plugin-obsidianmd";
 
-export default [
+export default defineConfig([
+  ...obsidianmd.configs.recommended,
   {
-    files: ['src/**/*.ts'],
+    files: ["**/*.ts"],
     languageOptions: {
-      parser,
-      parserOptions: {
-        ecmaVersion: 2020,
-        sourceType: 'module',
-      },
+      parser: tsparser,
+      parserOptions: { project: "./tsconfig.json" },
       globals: {
-        console: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        process: 'readonly',
+        console: "readonly",
+        document: "readonly",
+        crypto: "readonly",
+        btoa: "readonly",
+        atob: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        process: "readonly",
+        fetch: "readonly",
       },
     },
-    plugins: {
-      '@typescript-eslint': tseslint,
-    },
+
+    // You can add your own configuration to override or add rules
     rules: {
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['error', { args: 'none' }],
-      '@typescript-eslint/ban-ts-comment': 'off',
-      'no-prototype-builtins': 'off',
-      '@typescript-eslint/no-empty-function': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      semi: ["error", "never"],
+      "obsidianmd/ui/sentence-case": [
+        "warn",
+        {
+          brands: ["OpenClaw"]
+        },
+      ]
     },
   },
-];
+]);

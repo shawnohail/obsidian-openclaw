@@ -28,6 +28,7 @@
 		"@vitest/ui": "^4.0.18",
 		"esbuild": "0.25.5",
 		"eslint": "^10.0.2",
+		"eslint-plugin-obsidianmd": "^0.1.9",
 		"tslib": "2.4.0",
 		"typescript": "^5.8.3",
 		"vitest": "^4.0.18"

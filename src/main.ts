@@ -1,16 +1,16 @@
-import { Plugin, WorkspaceLeaf } from "obsidian";
-import { OpenClawChatView, VIEW_TYPE_OPENCLAW_CHAT } from "./chat-view";
-import { GatewayClient } from "./gateway-client";
-import { OpenClawSettingTab } from "./settings-tab";
-import { DEFAULT_SETTINGS, type OpenClawSettings } from "./types";
-import { generateDeviceIdentity, validateDeviceIdentity } from "./device-identity";
+import { Plugin, WorkspaceLeaf } from "obsidian"
+import { OpenClawChatView, VIEW_TYPE_OPENCLAW_CHAT } from "./chat-view"
+import { GatewayClient } from "./gateway-client"
+import { OpenClawSettingTab } from "./settings-tab"
+import { DEFAULT_SETTINGS, type OpenClawSettings } from "./types"
+import { generateDeviceIdentity, validateDeviceIdentity } from "./device-identity"
 
 export default class OpenClawPlugin extends Plugin {
-	settings!: OpenClawSettings;
-	client!: GatewayClient;
+	settings!: OpenClawSettings
+	client!: GatewayClient
 
 	async onload(): Promise<void> {
-		await this.loadSettings();
+		await this.loadSettings()
 
 		// Migrate legacy enableStreaming boolean to streamingMode
 		if (
@@ -19,80 +19,75 @@ export default class OpenClawPlugin extends Plugin {
 		) {
 			this.settings.streamingMode = this.settings.enableStreaming
 				? "websocket"
-				: "off";
-			await this.saveSettings();
+				: "off"
+			await this.saveSettings()
 		}
 
 		// Ensure device identity exists
-		await this.ensureDeviceIdentity();
+		await this.ensureDeviceIdentity()
 
-		this.client = new GatewayClient(() => this.settings);
+		this.client = new GatewayClient(() => this.settings)
 
 		// Wire up settings persistence for device token updates
 		this.client.onSettingsChanged = async () => {
-			await this.saveSettings();
-		};
+			await this.saveSettings()
+		}
 
 		// Register the chat sidebar view
 		this.registerView(VIEW_TYPE_OPENCLAW_CHAT, (leaf: WorkspaceLeaf) => {
-			return new OpenClawChatView(leaf, this);
-		});
+			return new OpenClawChatView(leaf, this)
+		})
 
 		// Ribbon icon to open the chat
-		this.addRibbonIcon("message-circle", "Open OpenClaw Chat", () => {
-			this.activateView();
-		});
+		this.addRibbonIcon("message-circle", "Open OpenClaw chat", () => {
+			void this.activateView()
+		})
 
 		// Command to toggle the chat panel
 		this.addCommand({
-			id: "open-openclaw-chat",
+			id: "open-chat",
 			name: "Open chat",
 			callback: () => {
-				this.activateView();
+				void this.activateView()
 			},
-		});
+		})
 
 		// Command to send selection to chat
 		this.addCommand({
-			id: "send-selection-to-openclaw",
-			name: "Send selection to OpenClaw",
+			id: "send-selection-to-chat",
+			name: "Send selection to chat",
 			editorCallback: (editor) => {
-				const selection = editor.getSelection();
+				const selection = editor.getSelection()
 				if (selection) {
-					this.activateView().then(() => {
-						// The view will pick up the selection via context sharing
-					});
+					void this.activateView()
 				}
 			},
-		});
+		})
 
 		// Settings tab
-		this.addSettingTab(new OpenClawSettingTab(this.app, this));
+		this.addSettingTab(new OpenClawSettingTab(this.app, this))
 
 		// Auto-connect WebSocket if that's the configured mode
 		if (this.settings.streamingMode === "websocket") {
 			// Delay slightly to let Obsidian finish loading
 			setTimeout(() => {
-				this.client.connectWebSocket();
-			}, 1_000);
+				this.client.connectWebSocket()
+			}, 1_000)
 		}
 	}
 
 	onunload(): void {
 		// Clean up WebSocket connection
-		this.client?.disconnectWebSocket();
+		this.client?.disconnectWebSocket()
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData(),
-		);
+		const data = (await this.loadData()) as Partial<OpenClawSettings> | null
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data ?? {})
 	}
 
 	async saveSettings(): Promise<void> {
-		await this.saveData(this.settings);
+		await this.saveData(this.settings)
 	}
 
 	/**
@@ -101,42 +96,42 @@ export default class OpenClawPlugin extends Plugin {
 	 */
 	async ensureDeviceIdentity(): Promise<void> {
 		if (!this.settings.deviceIdentity) {
-			this.settings.deviceIdentity = await generateDeviceIdentity();
-			await this.saveSettings();
+			this.settings.deviceIdentity = await generateDeviceIdentity()
+			await this.saveSettings()
 		} else {
 			// Validate existing identity (re-derive deviceId if needed)
 			const validated = await validateDeviceIdentity(
 				this.settings.deviceIdentity,
-			);
+			)
 			if (validated.deviceId !== this.settings.deviceIdentity.deviceId) {
-				this.settings.deviceIdentity = validated;
-				await this.saveSettings();
+				this.settings.deviceIdentity = validated
+				await this.saveSettings()
 			}
 		}
 	}
 
 	async activateView(): Promise<void> {
-		const { workspace } = this.app;
+		const { workspace } = this.app
 
-		let leaf: WorkspaceLeaf | null = null;
-		const leaves = workspace.getLeavesOfType(VIEW_TYPE_OPENCLAW_CHAT);
+		let leaf: WorkspaceLeaf | null = null
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_OPENCLAW_CHAT)
 
 		if (leaves.length > 0) {
 			// View already exists, reveal it
-			leaf = leaves[0]!;
+			leaf = leaves[0]!
 		} else {
 			// Create the view in the right sidebar
-			leaf = workspace.getRightLeaf(false);
+			leaf = workspace.getRightLeaf(false)
 			if (leaf) {
 				await leaf.setViewState({
 					type: VIEW_TYPE_OPENCLAW_CHAT,
 					active: true,
-				});
+				})
 			}
 		}
 
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			void workspace.revealLeaf(leaf)
 		}
 	}
 }
