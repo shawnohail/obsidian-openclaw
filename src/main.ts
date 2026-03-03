@@ -39,7 +39,7 @@ export default class OpenClawPlugin extends Plugin {
 		})
 
 		// Ribbon icon to open the chat
-		this.addRibbonIcon("message-circle", "Open OpenClaw chat", () => {
+		this.addRibbonIcon("message-circle", "Open openclaw chat", () => {
 			void this.activateView()
 		})
 

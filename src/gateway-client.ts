@@ -39,7 +39,7 @@ export class GatewayClient {
 	/** Callback to persist settings changes (device token, pairing status) */
 	onSettingsChanged: (() => Promise<void>) | null = null
 
-	constructor(private getSettings: () => OpenClawSettings) {}
+	constructor(private getSettings: () => OpenClawSettings) { }
 
 	private get baseUrl(): string {
 		return this.getSettings().gatewayUrl.replace(/\/+$/, "")
@@ -186,7 +186,7 @@ export class GatewayClient {
 		if (this.wsClient?.isConnected) {
 			return await this.wsClient.removeDevice(deviceId)
 		}
-		
+
 		// Fallback: not supported without WebSocket
 		console.error("[OpenClaw] Device removal requires WebSocket connection")
 		return false
@@ -289,7 +289,7 @@ export class GatewayClient {
 					this.chatEventListeners.delete(runId)
 					this.wsClient
 						?.chatAbort(sessionKey, runId)
-						.catch(() => {})
+						.catch(() => { })
 					onDone()
 				}
 

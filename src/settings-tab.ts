@@ -15,7 +15,7 @@ export class OpenClawSettingTab extends PluginSettingTab {
 		containerEl.empty()
 
 		containerEl.createEl("p", {
-			text: "Connect Obsidian to your local OpenClaw gateway using WebSocket streaming for real-time responses.",
+			text: "Connect Obsidian to your local openclaw gateway using websocket streaming for real-time responses.",
 			cls: "setting-item-description",
 		})
 
@@ -24,12 +24,9 @@ export class OpenClawSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Gateway URL")
-			.setDesc(
-				"Base URL of the OpenClaw gateway.",
-			)
+			.setDesc("Base URL of the openclaw gateway.")
 			.addText((text) =>
 				text
-					.setPlaceholder("http://localhost:18789")
 					.setValue(this.plugin.settings.gatewayUrl)
 					.onChange((value) => {
 						this.plugin.settings.gatewayUrl = value
@@ -41,7 +38,6 @@ export class OpenClawSettingTab extends PluginSettingTab {
 					.setButtonText("Test")
 					.setCta()
 					.onClick((): void => {
-						/* eslint-disable @typescript-eslint/no-misused-promises -- fire-and-forget health check */
 						button.setButtonText("Testing…")
 						button.setDisabled(true)
 						const p = this.plugin.client
@@ -49,7 +45,9 @@ export class OpenClawSettingTab extends PluginSettingTab {
 							.then((ok) => {
 								button.setButtonText(ok ? "✓ Connected" : "✗ Failed")
 								button.setDisabled(false)
-								setTimeout(() => button.setButtonText("Test"), 2000)
+								setTimeout(() => {
+									void button.setButtonText("Test")
+								}, 2000)
 							})
 							.catch(() => {
 								button.setButtonText("Test")
@@ -76,12 +74,9 @@ export class OpenClawSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Agent ID")
-			.setDesc(
-				"Which OpenClaw agent to chat with (e.g. 'main', 'beta'). Default: main.",
-			)
+			.setDesc("Which openclawagent to chat with (e.g. 'main', 'beta'). Default: main.")
 			.addText((text) =>
 				text
-					.setPlaceholder("main")
 					.setValue(this.plugin.settings.agentId)
 					.onChange((value) => {
 						this.plugin.settings.agentId = value
@@ -106,20 +101,20 @@ export class OpenClawSettingTab extends PluginSettingTab {
 						.setValue(identity.deviceId)
 						.setDisabled(true)
 				})
-			.addButton((button) =>
-				button.setButtonText("Regenerate").onClick(() => {
-					void generateDeviceIdentity().then((identity) => {
-						this.plugin.settings.deviceIdentity = identity
-						this.plugin.settings.deviceAuthToken = null
-						this.plugin.settings.devicePairingStatus = "unpaired"
-						return this.plugin.saveSettings()
-					}).then(() => {
-						this.plugin.client.disconnectWebSocket()
-						new Notice("New device identity generated. Re-pair to connect.")
-						this.display()
-					})
-				}),
-			)
+				.addButton((button) =>
+					button.setButtonText("Regenerate").onClick(() => {
+						void generateDeviceIdentity().then((identity) => {
+							this.plugin.settings.deviceIdentity = identity
+							this.plugin.settings.deviceAuthToken = null
+							this.plugin.settings.devicePairingStatus = "unpaired"
+							return this.plugin.saveSettings()
+						}).then(() => {
+							this.plugin.client.disconnectWebSocket()
+							new Notice("New device identity generated. Re-pair to connect.")
+							this.display()
+						})
+					}),
+				)
 		}
 
 		// Pairing status

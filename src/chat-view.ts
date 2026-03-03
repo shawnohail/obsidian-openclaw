@@ -33,7 +33,7 @@ export class OpenClawChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "OpenClaw chat"
+		return "Openclaw chat"
 	}
 
 	getIcon(): string {
@@ -50,7 +50,7 @@ export class OpenClawChatView extends ItemView {
 		const header = container.createDiv({ cls: "openclaw-chat-header" })
 		const titleRow = header.createDiv({ cls: "openclaw-chat-title-row" })
 		titleRow.createEl("span", {
-			text: "🦞 OpenClaw",
+			text: "Openclaw",
 			cls: "openclaw-chat-title",
 		})
 
@@ -81,7 +81,7 @@ export class OpenClawChatView extends ItemView {
 		this.inputEl = inputArea.createEl("textarea", {
 			cls: "openclaw-chat-input",
 			attr: {
-				placeholder: "Message OpenClaw…",
+				placeholder: "Message openclaw…",
 				rows: "1",
 			},
 		})
@@ -107,16 +107,16 @@ export class OpenClawChatView extends ItemView {
 		// This fires before the selection is cleared by focus events
 		const handleSelectionChange = () => {
 			if (!this.plugin.settings.shareSelection) return
-			
+
 			const leaves = this.app.workspace.getLeavesOfType("markdown")
 			if (leaves.length === 0) return
-			
+
 			const leaf = leaves[0]
 			if (!leaf) return
-			
+
 			const mdView = leaf.view as MarkdownView
 			const editor = mdView?.editor
-			
+
 			if (editor) {
 				const selection = editor.getSelection()
 				if (selection) {
@@ -124,7 +124,7 @@ export class OpenClawChatView extends ItemView {
 				}
 			}
 		}
-		
+
 		document.addEventListener("selectionchange", handleSelectionChange)
 		this.register(() => document.removeEventListener("selectionchange", handleSelectionChange))
 
