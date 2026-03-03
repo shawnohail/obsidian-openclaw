@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/ui/sentence-case -- settings use technical labels and headings */
 import { App, Notice, PluginSettingTab, Setting } from "obsidian"
 import type OpenClawPlugin from "./main"
 import { generateDeviceIdentity } from "./device-identity"
@@ -57,15 +56,12 @@ export class OpenClawSettingTab extends PluginSettingTab {
 								button.setDisabled(false)
 							})
 						void p
-						/* eslint-enable @typescript-eslint/no-misused-promises */
 					}),
 			)
 
 		new Setting(containerEl)
 			.setName("Gateway token")
-			.setDesc(
-				"Authentication token (OPENCLAW_GATEWAY_TOKEN).",
-			)
+			.setDesc("Authentication token.")
 			.addText((text) => {
 				text.inputEl.type = "password"
 				text.inputEl.addClass("openclaw-setting-input-full")
@@ -94,7 +90,7 @@ export class OpenClawSettingTab extends PluginSettingTab {
 			)
 
 		// --- Device Pairing ---
-		new Setting(containerEl).setName("Device Pairing").setHeading()
+		new Setting(containerEl).setName("Device pairing").setHeading()
 
 		const identity = this.plugin.settings.deviceIdentity
 		const pairingStatus = this.plugin.settings.devicePairingStatus
@@ -162,10 +158,10 @@ export class OpenClawSettingTab extends PluginSettingTab {
 							const newStatus =
 								this.plugin.settings.devicePairingStatus
 							if (newStatus === "paired") {
-								new Notice("✅ Device paired successfully!")
+								new Notice("Device paired successfully!")
 							} else if (newStatus === "pending") {
 								new Notice(
-									"⏳ Pairing request sent. Approve on the gateway:\n  openclaw devices approve",
+									"Pairing request sent.",
 								)
 							} else {
 								new Notice(
@@ -182,7 +178,7 @@ export class OpenClawSettingTab extends PluginSettingTab {
 		if (pairingStatus === "paired") {
 			statusSetting.addButton((button) =>
 				button
-					.setButtonText("Unpair Device")
+					.setButtonText("Unpair device")
 					.setWarning()
 					.onClick(() => {
 						this.plugin.settings.deviceAuthToken = null
@@ -201,14 +197,12 @@ export class OpenClawSettingTab extends PluginSettingTab {
 				cls: "setting-item-description openclaw-setting-description-nested",
 			})
 			const p = pendingNote.createEl("p")
-			p.createSpan({ text: "This device is waiting for approval on the gateway host. Run " })
-			p.createEl("code", { text: "openclaw devices approve" })
-			p.createSpan({ text: " on the machine running the gateway, or approve in the OpenClaw Control UI under Nodes → Devices." })
+			p.createSpan({ text: "This device is waiting for approval on the gateway host." })
 		}
 
 
 		// --- Context ---
-		new Setting(containerEl).setName("Context Sharing").setHeading()
+		new Setting(containerEl).setName("Context sharing").setHeading()
 
 		new Setting(containerEl)
 			.setName("Share active file path")

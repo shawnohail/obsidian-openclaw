@@ -169,13 +169,16 @@ export class GatewayClient {
 
 
 	/** Fetch chat history for a session via WebSocket */
-	async chatHistory(
+	chatHistory(
 		sessionKey: string,
 		limit = 50,
 	): Promise<Record<string, unknown> | undefined> {
-		if (!this.wsClient?.isConnected) return undefined
+		if (!this.wsClient?.isConnected) {
+			return Promise.resolve(undefined)
+		}
 		return this.wsClient.chatHistory(sessionKey, limit)
 	}
+
 
 	/** Remove a paired device from the gateway */
 	async removeDevice(deviceId: string): Promise<boolean> {

@@ -41,6 +41,7 @@ export class OpenClawChatView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
+		await Promise.resolve()
 		const container = this.containerEl.children[1] as HTMLElement
 		container.empty()
 		container.addClass("openclaw-chat-container")
@@ -145,6 +146,7 @@ export class OpenClawChatView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		await Promise.resolve()
 		this.abortController?.abort()
 		if (this.unsubConnectionState) {
 			this.unsubConnectionState()
@@ -457,14 +459,13 @@ export class OpenClawChatView extends ItemView {
 
 	private updateMessageContent(el: HTMLElement, content: string): void {
 		el.empty()
-		// Render markdown (plugin required by MarkdownRenderer API)
+		// Render markdown
 		void MarkdownRenderer.render(
 			this.app,
 			content,
 			el,
 			"",
-			// eslint-disable-next-line obsidianmd/no-plugin-as-component -- MarkdownRenderer requires plugin
-			this.plugin,
+			this,
 		)
 		// Scroll to bottom
 		this.containerEl_messages.scrollTop =

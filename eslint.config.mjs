@@ -27,11 +27,13 @@ export default defineConfig([
 
     // You can add your own configuration to override or add rules
     rules: {
+      "require-await": "error",
       semi: ["error", "never"],
       "obsidianmd/ui/sentence-case": [
         "warn",
         {
-          brands: ["OpenClaw"]
+          brands: ["Obsidian", "OpenClaw"],
+          ignoreRegex: ["http://", "main"]
         },
       ]
     },

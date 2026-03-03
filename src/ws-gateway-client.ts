@@ -173,7 +173,7 @@ export class WsGatewayClient {
 	 * Send an RPC request to the gateway.
 	 * Returns a promise that resolves with the response payload.
 	 */
-	async request(
+	request(
 		method: string,
 		params: unknown,
 		timeoutMs = 30_000,
